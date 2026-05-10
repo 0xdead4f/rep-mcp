@@ -28,7 +28,7 @@
 
 > 🍴 **This is a fork of [bscript/rep](https://github.com/bscript/rep) that adds MCP (Model Context Protocol) integration.**
 > Every captured request is exposed to Claude Code (and any other MCP-compatible client) as a tool, and the in-panel AI chat can be routed through your local `claude` CLI — no API key needed.
-> See **[🔥 MCP Integration](#-mcp-integration--end-to-end-install)** below.
+> See **[🔥 MCP Integration](#-mcp-integration--one-shot-install)** below.
 
 rep+ is a lightweight Chrome DevTools extension inspired by Burp Suite's Repeater, now supercharged with AI. I often need to poke at a few requests without spinning up the full Burp stack, so I built this extension to keep my workflow fast, focused, and intelligent with integrated LLM support.
 
@@ -44,7 +44,7 @@ rep+ is a lightweight Chrome DevTools extension inspired by Burp Suite's Repeate
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Installation](#installation)
-- [🔥 MCP Integration — End-to-End Install](#-mcp-integration--end-to-end-install)
+- [🔥 MCP Integration — One-Shot Install](#-mcp-integration--one-shot-install)
 - [Permissions & Privacy](#permissions--privacy)
 - [Limitations](#-limitations)
 - [Star History](#star-history)
@@ -225,133 +225,49 @@ If you use a local model (e.g., Ollama) you must allow Chrome extensions to call
 
 ---
 
-## 🔥 MCP Integration — End-to-End Install
+## 🔥 MCP Integration — One-Shot Install
 
 <p align="center">
   <img src="https://img.shields.io/badge/🧩-MCP_Powered-FF6B35?style=for-the-badge" alt="MCP Powered">
-  <img src="https://img.shields.io/badge/🛠-6_Tools_Exposed-7B68EE?style=for-the-badge" alt="6 Tools Exposed">
-  <img src="https://img.shields.io/badge/⚡-Claude_Code_Compatible-success?style=for-the-badge" alt="Claude Code Compatible">
-  <img src="https://img.shields.io/badge/🔑-Optional_No_API_Key-blue?style=for-the-badge" alt="Optional No API Key">
+  <img src="https://img.shields.io/badge/⚡-Auto_Spawned_With_claude-success?style=for-the-badge" alt="Auto-spawned with claude">
+  <img src="https://img.shields.io/badge/🔑-No_API_Key_Needed-blue?style=for-the-badge" alt="No API Key">
 </p>
 
-> **The headline feature of this fork.** A bundled Node WebSocket bridge (`rep-mcp`) turns every captured HTTP request into an **MCP tool** that any MCP-compatible client (Claude Code, etc.) can call — list, view, regex-search, replay. As a bonus, the in-panel AI chat can be routed through your local `claude` CLI, skipping API keys entirely.
->
-> **Architecture:**
-> ```
-> Claude Code (or any MCP client) ─stdio─►  rep-mcp server  ◄─ws─►  rep+ panel  ◄─►  captured requests
->                                               ▲
->                                               └── Claude Agent SDK (when chat is routed via claude CLI)
-> ```
+> Bundled in this fork: a local MCP bridge (`rep-mcp`) that turns every captured HTTP request into an MCP tool Claude Code can call. Once registered, **the bridge auto-spawns whenever you run `claude`** — no separate `npx rep-mcp` step.
 
-### 🛠 What the MCP server exposes
-| Tool             | Purpose                                                                                  |
-| ---------------- | ---------------------------------------------------------------------------------------- |
-| `list_requests`  | List captured requests with field projection, filter, sort, regex search across body/headers |
-| `view_request`   | Full request dump for one id (headers/cookies redacted by default to save tokens)        |
-| `view_response`  | Full response dump for one id (body auto-truncates at 4 KB unless `body="full"`)         |
-| `match`          | Boolean predicate — does a regex hit inside request/response? Returns matched lines only |
-| `endpoints`      | Deduplicated `METHOD host path × count` inventory — recon without full body dumps        |
-| `replay_request` | Replay a captured request through the extension and return the live response             |
+### Single command setup
 
-### ✅ Prerequisites
-- **Node.js 18+** (`node --version`)
-- **Chrome / Chromium**
-- An MCP-compatible client (e.g. **Claude Code**) — only required if you want to call the tools from outside the panel
-- A Claude account (subscription / API key / Bedrock / Vertex) — only required if you want the chat-pane routing through `claude`
-
-### 📦 Step 1 — Install this fork (the rep+ Chrome extension)
 ```bash
 git clone https://github.com/0xdead4f/rep-mcp.git
-```
-Then in Chrome:
-1. Open `chrome://extensions/`
-2. Toggle **Developer mode** (top-right)
-3. Click **Load unpacked** → select the cloned `rep-mcp` folder
-4. Open DevTools (`F12`) → click the **rep+** tab (use `>>` overflow if needed)
-
-> Upstream rep+ is also on the [Chrome Web Store](https://chromewebstore.google.com/detail/rep+/dhildnnjbegaggknfkagdpnballiepfm), but it does **not** include the MCP bridge — clone this fork to get it.
-
-### 🌉 Step 2 — Start the rep-mcp bridge
-The bridge lives in `mcp-server/`. It does double duty: serves an **MCP stdio server** to Claude Code-style clients **and** a **WebSocket server** to the rep+ panel.
-
-```bash
-npx rep-mcp
+cd rep-mcp
+bash install.sh
 ```
 
-You should see:
-```
-[rep-mcp] Bridge listening on ws://localhost:54321
-[rep-mcp] MCP stdio server ready
-```
+`install.sh` does three things:
+1. Verifies / installs the `claude` CLI.
+2. Registers `rep-mcp` with Claude Code at user scope (`claude mcp add -s user rep -- npx rep-mcp`) so it auto-spawns on `claude` startup.
+3. Installs the bundled pentest skill to `~/.claude/skills/rep+mcp/`.
 
-Leave it running. The WS port is configurable via `REP_MCP_PORT=...` and in Settings → **Bridge Port**.
+Then load the cloned folder as an unpacked Chrome extension:
+- `chrome://extensions/` → enable **Developer mode** → **Load unpacked** → select the cloned folder.
+- Open DevTools (`F12`) → **rep+** tab → **Settings** → toggle **MCP Server** on.
+- Run `claude` in any terminal. The status dot turns green within ~3s.
 
-### ⚙️ Step 3 — Connect the panel to the bridge
-1. Click the **Settings** gear in the rep+ panel.
-2. Toggle **MCP Server** on.
-3. The **MCP config snippet** below the toggle is the JSON to paste into your MCP client (e.g. Claude Code's `~/.config/claude/mcp.json`).
-4. The status dot should go **green** within ~3 seconds. If not, confirm `npx rep-mcp` is still running.
+### What you get
+- **6 MCP tools** callable from Claude Code: `list_requests`, `view_request`, `view_response`, `match`, `endpoints`, `replay_request`.
+- **A bundled skill** (`rep+mcp`) that teaches Claude how to use them efficiently for blackbox pentesting.
+- **Optional chat routing** — Settings → AI Provider → "Claude Code (local CLI)" → Save. Pipes the in-panel chat through your local `claude` (extended thinking + Bash enabled). Edit defaults in `mcp-server/claude-chat.js`.
 
-You can now call `mcp__rep__list_requests`, `mcp__rep__view_response`, etc. from Claude Code against your live capture.
-
-### 🧠 Optional Step 4 — Install the bundled Claude Code skill
-A pre-written skill that teaches Claude Code how to use the `mcp__rep__*` tools effectively for blackbox pentesting (token-aware defaults, tool-by-tool examples, browser-MCP composition patterns) ships at `.claude/skills/rep+mcp/SKILL.md`.
-
-**Project scope** (works automatically when Claude Code is launched from this repo):
-```bash
-# nothing to do — it's already at .claude/skills/rep+mcp/
-```
-
-**User scope** (works from any directory):
-```bash
-mkdir -p ~/.claude/skills
-cp -r .claude/skills/rep+mcp ~/.claude/skills/
-```
-
-Restart Claude Code (or run `/skills` to confirm `rep-mcp` shows up). The skill auto-triggers on pentest-flavored requests once the MCP tools are visible.
-
-### 💬 Optional Step 5 — Route the panel's AI chat through `claude`
-If you also want the in-panel chat to skip API keys and use your local `claude` CLI:
-
-```bash
-# install claude CLI (one-time)
-npm install -g @anthropic-ai/claude-code
-
-# log in (opens your browser)
-claude
-```
-
-Then in the rep+ panel: **Settings** → **AI Provider** → **`Claude Code (local CLI)`** → **Save**. The panel now streams chat through `claude`, with extended thinking + Bash enabled by default.
-
-### 🎛️ Defaults for the chat-routing path
-| Setting              | Value                            | Why                                                     |
-| -------------------- | -------------------------------- | ------------------------------------------------------- |
-| `model`              | inherits from `claude` CLI       | Whatever you've configured Claude Code to use           |
-| `maxThinkingTokens`  | `32000`                          | Heavy extended thinking; expect a delay before streaming |
-| `allowedTools`       | `['Bash']`                       | Shell execution available; nothing else                  |
-| `permissionMode`     | `'bypassPermissions'`            | No permission dialogs (panel can't render them anyway)   |
-| `customSystemPrompt` | rep+ chat system prompt + transcript | Replaces Claude Code's persona for chat-style behavior |
-
-Tweak any of these in `mcp-server/claude-chat.js` and restart `npx rep-mcp`.
-
-### ⚠️ Security warning — applies only to the chat-routing path (Step 5)
-Bash runs **as the user that started `npx rep-mcp`**, in that process's **current working directory**, with **no permission prompts**. Anything the assistant ingests — including content extracted from captured HTTP responses — becomes potential prompt-injection into your shell.
-
-Mitigations:
-- Run the bridge from a sandbox/scratch directory.
-- Edit `mcp-server/claude-chat.js` and add `cwd: '/path/to/sandbox'` + `additionalDirectories: []` to the `query()` options to constrain filesystem access.
-- Remove `'Bash'` from `allowedTools` if you only want chat.
-- The MCP tools themselves (Steps 1–3) only **read** captured request data — they don't execute shell commands, so this warning doesn't apply if you skip Step 5.
+### ⚠️ Security note (chat-routing path only)
+With "Claude Code (local CLI)" selected, Bash runs **unsandboxed** in the bridge's cwd with **no permission prompts**. Captured HTTP response content can become prompt-injection into your shell. Run the bridge from a sandbox dir, or remove `'Bash'` from `allowedTools` in `mcp-server/claude-chat.js`. The plain MCP-tools path (no chat routing) is read-only and unaffected.
 
 ### 🩺 Troubleshooting
-| Symptom                                  | Likely cause                                  | Fix                                                              |
-| ---------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------- |
-| Status dot stays grey                    | Bridge not running                            | Start `npx rep-mcp`                                              |
-| MCP client can't see the tools           | `mcp.json` missing the snippet from Settings  | Copy from Settings → "MCP config snippet" and restart your client |
-| Chat pane stuck in "thinking" forever    | Bridge running old code (no `claude-chat` handler) | Restart `npx rep-mcp`                                            |
-| Chat errors with auth message            | `claude` CLI not logged in                    | Run `claude` once interactively, complete login, retry           |
-| `EADDRINUSE` on bridge start             | Port 54321 already in use                     | Set `REP_MCP_PORT=PORT npx rep-mcp` and update Settings → Bridge Port |
-| First chat chunk takes 5–15s             | Extended thinking is running                  | Expected — lower `maxThinkingTokens` in `claude-chat.js` for snappier replies |
+| Symptom                                  | Fix                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| Status dot stays grey                    | Run `claude` (auto-spawns the bridge) or `npx rep-mcp` standalone |
+| Tools not visible in Claude Code         | `claude mcp list` to verify; re-run `bash install.sh` if missing  |
+| Chat pane stuck in "thinking"            | Restart `claude` so the bridge respawns with fresh code           |
+| `EADDRINUSE` on bridge start             | Set `REP_MCP_PORT` env var and update Settings → Bridge Port      |
 
 
 ## Permissions & Privacy
