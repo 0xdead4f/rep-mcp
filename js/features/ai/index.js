@@ -111,6 +111,7 @@ export function setupAIFeatures(elements) {
     const anthropicSettings = document.getElementById('anthropic-settings');
     const geminiSettings = document.getElementById('gemini-settings');
     const localSettings = document.getElementById('local-settings');
+    const claudeCodeSettings = document.getElementById('claude-code-settings');
     const localApiUrlInput = document.getElementById('local-api-url');
     const localModelInput = document.getElementById('local-model');
     const aiMenuBtn = document.getElementById('ai-menu-btn');
@@ -192,7 +193,8 @@ export function setupAIFeatures(elements) {
             anthropicSettings.style.display = 'none';
             geminiSettings.style.display = 'none';
             localSettings.style.display = 'none';
-            
+            if (claudeCodeSettings) claudeCodeSettings.style.display = 'none';
+
             if (provider === 'gemini') {
                 geminiSettings.style.display = 'block';
                 // Try to auto-load models if API key is present
@@ -202,6 +204,8 @@ export function setupAIFeatures(elements) {
                 }
             } else if (provider === 'local') {
                 localSettings.style.display = 'block';
+            } else if (provider === 'claude-code') {
+                if (claudeCodeSettings) claudeCodeSettings.style.display = 'block';
             } else {
                 anthropicSettings.style.display = 'block';
                 const key = anthropicApiKeyInput ? anthropicApiKeyInput.value.trim() : '';
@@ -221,6 +225,7 @@ export function setupAIFeatures(elements) {
             anthropicSettings.style.display = 'none';
             geminiSettings.style.display = 'none';
             localSettings.style.display = 'none';
+            if (claudeCodeSettings) claudeCodeSettings.style.display = 'none';
 
             if (provider === 'gemini') {
                 geminiApiKeyInput.value = apiKey;
@@ -232,6 +237,8 @@ export function setupAIFeatures(elements) {
                 if (localApiUrlInput) localApiUrlInput.value = apiKey; // apiKey is actually the URL for local
                 if (localModelInput) localModelInput.value = model;
                 localSettings.style.display = 'block';
+            } else if (provider === 'claude-code') {
+                if (claudeCodeSettings) claudeCodeSettings.style.display = 'block';
             } else {
                 anthropicApiKeyInput.value = apiKey;
                 if (anthropicModelSelect) anthropicModelSelect.value = model;
@@ -255,6 +262,12 @@ export function setupAIFeatures(elements) {
             } else if (provider === 'local') {
                 key = localApiUrlInput ? localApiUrlInput.value.trim() : 'http://localhost:11434/api/generate';
                 model = localModelInput ? localModelInput.value.trim() : '';
+            } else if (provider === 'claude-code') {
+                // No fields — provider choice is the only setting.
+                saveAISettings(provider, '', '');
+                alert('Settings saved! Make sure MCP Server is enabled and `npx rep-mcp` is running.');
+                settingsModal.style.display = 'none';
+                return;
             } else {
                 key = anthropicApiKeyInput.value.trim();
                 model = anthropicModelSelect ? anthropicModelSelect.value : 'claude-3-5-sonnet-20241022';

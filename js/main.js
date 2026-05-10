@@ -22,6 +22,8 @@ import { setupLLMChat } from './features/llm-chat/index.js';
 import { handleSendRequest } from './network/handler.js';
 import { initSearch } from './search/index.js';
 
+import { setupMCPServer } from './features/mcp-server/index.js';
+
 // UI Modules
 import { setupBlockControls } from './ui/block-controls.js';
 import { setupFilters } from './ui/filters.js';
@@ -40,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Features
     initTheme();
+    setupMCPServer();
     initMultiTabCapture();
     initExtractorUI();
     setupBulkReplay();

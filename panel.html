@@ -663,6 +663,7 @@
                         <option value="anthropic">Anthropic (Claude)</option>
                         <option value="gemini">Google Gemini</option>
                         <option value="local">Local Model (Ollama)</option>
+                        <option value="claude-code">Claude Code (local CLI)</option>
                     </select>
                 </div>
                 <div id="anthropic-settings" class="provider-settings">
@@ -707,6 +708,45 @@
                         <input type="text" id="local-model" class="form-control" placeholder="gemma3:4b">
                         <p class="help-text">Name of the local model to use.</p>
                     </div>
+                </div>
+                <div id="claude-code-settings" class="provider-settings" style="display: none;">
+                    <div class="form-group">
+                        <p class="help-text" style="margin-top:0;">
+                            Routes the AI chat through your local <code>claude</code> CLI via the rep-mcp bridge.
+                            No API key needed — auth comes from <code>claude</code>.
+                        </p>
+                        <p class="help-text" style="margin-bottom:4px;"><strong>Requires:</strong></p>
+                        <ul class="help-text" style="margin-top:0; padding-left:18px;">
+                            <li><code>claude</code> CLI installed and logged in</li>
+                            <li>MCP Server toggle enabled below</li>
+                            <li><code>npx rep-mcp</code> running locally</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- MCP Server Section -->
+                <hr style="border-color: var(--border-color, #333); margin: 16px 0;">
+                <div class="form-group">
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="mcp-server-toggle" style="width:16px;height:16px;">
+                        MCP Server
+                        <span id="mcp-status-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text-muted,#666);"></span>
+                        <span id="mcp-status-text" style="font-size:0.8em;color:var(--text-muted,#888);">Off</span>
+                    </label>
+                    <p class="help-text">Exposes captured requests to Claude Code via MCP. Requires the bridge server running locally.</p>
+                </div>
+                <div class="form-group">
+                    <label for="mcp-port-input">Bridge Port</label>
+                    <input type="number" id="mcp-port-input" class="form-control" value="54321" min="1024" max="65535" style="width:100px;">
+                </div>
+                <div class="form-group">
+                    <label>Claude Code config</label>
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <code id="mcp-config-snippet" style="flex:1;font-size:0.75em;padding:6px 8px;background:var(--bg-secondary,#1a1a1a);border:1px solid var(--border-color,#333);border-radius:4px;overflow-x:auto;white-space:pre;"></code>
+                        <button id="mcp-copy-config" class="icon-btn" style="flex-shrink:0;">Copy</button>
+                    </div>
+                    <p id="mcp-setup-note" class="help-text" style="display:none;color:var(--warning-color,#f90);">
+                        Bridge not running. Start it once: <code>npx rep-mcp</code>
+                    </p>
                 </div>
             </div>
             <div class="modal-footer">

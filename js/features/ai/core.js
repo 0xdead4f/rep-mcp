@@ -1,4 +1,5 @@
 // AI Core Module - Generic LLM wrapper and provider abstraction
+import { streamClaudeChat, isWsConnected } from '../mcp-server/ws-client.js';
 
 export function getAISettings() {
     const provider = localStorage.getItem('ai_provider') || 'anthropic';
@@ -16,6 +17,16 @@ export function getAISettings() {
             provider: 'local',
             apiKey: localStorage.getItem('local_api_url') || 'http://localhost:11434/api/generate',
             model: localStorage.getItem('local_model') || ''
+        };
+    }
+
+    if (provider === 'claude-code') {
+        // No API key — auth handled by the local `claude` CLI. Sentinel keeps
+        // truthy checks elsewhere happy.
+        return {
+            provider: 'claude-code',
+            apiKey: 'claude-code',
+            model: 'claude-code'
         };
     }
 
@@ -114,6 +125,8 @@ export function saveAISettings(provider, apiKey, model) {
     } else if (provider === 'local') {
         localStorage.setItem('local_api_url', apiKey); // apiKey is actually the URL for local
         localStorage.setItem('local_model', model);
+    } else if (provider === 'claude-code') {
+        // Nothing to persist — the provider choice is the only setting.
     } else {
         localStorage.setItem('anthropic_api_key', apiKey);
         localStorage.setItem('anthropic_model', model);
@@ -155,7 +168,25 @@ export async function streamChatWithMessages(apiKey, model, messages, onUpdate, 
     if (provider === 'local') {
         return streamChatFromLocalWithMessages(apiKey, model, messages, onUpdate);
     }
+    if (provider === 'claude-code') {
+        return streamChatFromClaudeCode(messages, onUpdate);
+    }
     return streamChatFromClaudeWithMessages(apiKey, model, messages, onUpdate);
+}
+
+/**
+ * Stream a chat turn through the local `claude` CLI via the rep-mcp WS bridge.
+ * Requires the MCP Server toggle to be enabled and `npx rep-mcp` running.
+ */
+export async function streamChatFromClaudeCode(messages, onUpdate) {
+    if (!isWsConnected()) {
+        throw new Error(
+            'Claude Code bridge not connected. Enable MCP Server in Settings and run: npx rep-mcp'
+        );
+    }
+    const systemMessage = messages.find(m => m.role === 'system');
+    const conversation = messages.filter(m => m.role !== 'system');
+    return streamClaudeChat(conversation, systemMessage?.content || '', onUpdate);
 }
 
 export async function streamExplanationFromClaude(apiKey, model, request, onUpdate) {

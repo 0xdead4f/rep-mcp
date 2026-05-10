@@ -1,0 +1,17 @@
+{
+  "name": "rep-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for rep+ Chrome DevTools extension",
+  "type": "module",
+  "bin": {
+    "rep-mcp": "./bin.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.77",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
